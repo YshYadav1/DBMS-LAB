@@ -1,0 +1,964 @@
+create database if not exists collegeLab;
+use collegeLab;
+CREATE TABLE classroom (
+    building VARCHAR(15),
+    room_number VARCHAR(7),
+    capacity NUMERIC(4, 0),
+    PRIMARY KEY (building, room_number)
+);
+CREATE TABLE department (
+    dept_name VARCHAR(20),
+    building VARCHAR(15),
+    budget NUMERIC(12, 2) CHECK (budget > 0),
+    PRIMARY KEY (dept_name)
+);
+CREATE TABLE course (
+    course_id VARCHAR(8),
+    title VARCHAR(50),
+    dept_name VARCHAR(20),
+    credits NUMERIC(2, 0) CHECK (credits > 0),
+    PRIMARY KEY (course_id),
+    FOREIGN KEY (dept_name) REFERENCES department(dept_name) ON DELETE
+    SET NULL
+);
+CREATE TABLE instructor (
+    ID VARCHAR(5),
+    name VARCHAR(20) NOT NULL,
+    dept_name VARCHAR(20),
+    salary NUMERIC(8, 2) CHECK (salary > 29000),
+    PRIMARY KEY (ID),
+    FOREIGN KEY (dept_name) REFERENCES department(dept_name) ON DELETE
+    SET NULL
+);
+CREATE TABLE section (
+    course_id VARCHAR(8),
+    sec_id VARCHAR(8),
+    semester VARCHAR(6) CHECK (
+        semester IN ('Fall', 'Winter', 'Spring', 'Summer')
+    ),
+    year NUMERIC(4, 0) CHECK (
+        year > 1701
+        AND year < 2100
+    ),
+    building VARCHAR(15),
+    room_number VARCHAR(7),
+    time_slot_id VARCHAR(4),
+    PRIMARY KEY (course_id, sec_id, semester, year),
+    FOREIGN KEY (course_id) REFERENCES course(course_id) ON DELETE CASCADE,
+    FOREIGN KEY (building, room_number) REFERENCES classroom(building, room_number) ON DELETE
+    SET NULL
+);
+CREATE TABLE teaches (
+    ID VARCHAR(5),
+    course_id VARCHAR(8),
+    sec_id VARCHAR(8),
+    semester VARCHAR(6),
+    year NUMERIC(4, 0),
+    PRIMARY KEY (ID, course_id, sec_id, semester, year),
+    FOREIGN KEY (course_id, sec_id, semester, year) REFERENCES section(course_id, sec_id, semester, year) ON DELETE CASCADE,
+    FOREIGN KEY (ID) REFERENCES instructor(ID) ON DELETE CASCADE
+);
+CREATE TABLE student (
+    ID VARCHAR(5),
+    name VARCHAR(20) NOT NULL,
+    dept_name VARCHAR(20),
+    tot_cred NUMERIC(3, 0) CHECK (tot_cred >= 0),
+    PRIMARY KEY (ID),
+    FOREIGN KEY (dept_name) REFERENCES department(dept_name) ON DELETE
+    SET NULL
+);
+CREATE TABLE takes (
+    ID VARCHAR(5),
+    course_id VARCHAR(8),
+    sec_id VARCHAR(8),
+    semester VARCHAR(6),
+    year NUMERIC(4, 0),
+    grade VARCHAR(2),
+    PRIMARY KEY (ID, course_id, sec_id, semester, year),
+    FOREIGN KEY (course_id, sec_id, semester, year) REFERENCES section(course_id, sec_id, semester, year) ON DELETE CASCADE,
+    FOREIGN KEY (ID) REFERENCES student(ID) ON DELETE CASCADE
+);
+CREATE TABLE advisor (
+    s_ID VARCHAR(5),
+    i_ID VARCHAR(5),
+    PRIMARY KEY (s_ID),
+    FOREIGN KEY (i_ID) REFERENCES instructor(ID) ON DELETE
+    SET NULL,
+        FOREIGN KEY (s_ID) REFERENCES student(ID) ON DELETE CASCADE
+);
+CREATE TABLE time_slot (
+    time_slot_id VARCHAR(4),
+    day VARCHAR(1),
+    start_hr NUMERIC(2) CHECK (
+        start_hr >= 0
+        AND start_hr < 24
+    ),
+    start_min NUMERIC(2) CHECK (
+        start_min >= 0
+        AND start_min < 60
+    ),
+    end_hr NUMERIC(2) CHECK (
+        end_hr >= 0
+        AND end_hr < 24
+    ),
+    end_min NUMERIC(2) CHECK (
+        end_min >= 0
+        AND end_min < 60
+    ),
+    PRIMARY KEY (time_slot_id, day, start_hr, start_min)
+);
+CREATE TABLE prereq (
+    course_id VARCHAR(8),
+    prereq_id VARCHAR(8),
+    PRIMARY KEY (course_id, prereq_id),
+    FOREIGN KEY (course_id) REFERENCES course(course_id) ON DELETE CASCADE,
+    FOREIGN KEY (prereq_id) REFERENCES course(course_id)
+);
+--for table 1 classroom 
+INSERT INTO classroom
+VALUES ('Science Hall', '101', 50);
+INSERT INTO classroom
+VALUES ('Science Hall', '102', 45);
+INSERT INTO classroom
+VALUES ('EngineeringBldg', '201', 60);
+INSERT INTO classroom
+VALUES ('EngineeringBldg', '202', 55);
+INSERT INTO classroom
+VALUES ('Arts Center', 'A01', 40);
+INSERT INTO classroom
+VALUES ('Arts Center', 'A02', 35);
+INSERT INTO classroom
+VALUES ('Library', 'L1', 20);
+INSERT INTO classroom
+VALUES ('Library', 'L2', 25);
+INSERT INTO classroom
+VALUES ('Business Wing', 'B101', 30);
+INSERT INTO classroom
+VALUES ('Business Wing', 'B102', 50);
+--For Table 2 department 
+INSERT INTO department
+VALUES ('Computer Science', 'Science Hall', 120000.00);
+INSERT INTO department
+VALUES ('Mathematics', 'EngineeringBldg', 80000.50);
+INSERT INTO department
+VALUES ('Physics', 'Science Hall', 100000.75);
+INSERT INTO department
+VALUES ('Chemistry', 'Research Center', 95000.00);
+INSERT INTO department
+VALUES ('Biology', 'Life Sciences', 87000.00);
+INSERT INTO department
+VALUES ('English', 'Arts Center', 60000.00);
+INSERT INTO department
+VALUES ('History', 'Humanities Wing', 55000.00);
+INSERT INTO department
+VALUES ('Business', 'Business Wing', 150000.00);
+INSERT INTO department
+VALUES ('Economics', 'Business Wing', 92000.00);
+INSERT INTO department
+VALUES ('Psychology', 'Social Sciences', 72000.25);
+-- For Table 3 course 
+INSERT INTO course
+VALUES (
+        'CS101',
+        'Introduction to Computer Science',
+        'Computer Science',
+        3
+    );
+INSERT INTO course
+VALUES (
+        'CS201',
+        'Data Structures',
+        'Computer Science',
+        4
+    );
+INSERT INTO course
+VALUES ('MA201', 'Calculus I', 'Mathematics', 3);
+INSERT INTO course
+VALUES ('MA101', 'Linear Algebra', 'Mathematics', 3);
+INSERT INTO course
+VALUES ('EE210', 'Classical Mechanics', 'Physics', 4);
+INSERT INTO course
+VALUES ('EN101', 'Organic Chemistry', 'Chemistry', 4);
+INSERT INTO course
+VALUES ('EE110', 'General Biology', 'Biology', 3);
+INSERT INTO course
+VALUES ('LI101', 'English Literature', 'English', 3);
+INSERT INTO course
+VALUES ('HI101', 'World History', 'History', 3);
+INSERT INTO course
+VALUES (
+        'BU101',
+        'Principles of Management',
+        'Business',
+        3
+    );
+-- For Table 4 instructor
+INSERT INTO instructor
+VALUES ('I001', 'John Doe', 'Computer Science', 50000.00);
+INSERT INTO instructor
+VALUES ('I002', 'Jane Smith', 'Mathematics', 60000.00);
+INSERT INTO instructor
+VALUES ('I003', 'David Lee', 'Physics', 55000.00);
+INSERT INTO instructor
+VALUES ('I004', 'Sarah Jones', 'English', 45000.00);
+INSERT INTO instructor
+VALUES ('I005', 'Michael Brown', 'Business', 70000.00);
+INSERT INTO instructor
+VALUES ('I006', 'Emily Davis', 'History', 48000.00);
+INSERT INTO instructor
+VALUES ('I007', 'Daniel Wilson', 'Psychology', 52000.00);
+INSERT INTO instructor
+VALUES (
+        'I008',
+        'Olivia Taylor',
+        'Computer Science',
+        65000.00
+    );
+INSERT INTO instructor
+VALUES (
+        'I009',
+        'James Anderson',
+        'Mathematics',
+        58000.00
+    );
+INSERT INTO instructor
+VALUES ('I010', 'Sophia Clark', 'Physics', 49000.00);
+-- For Table 5 section 
+INSERT INTO section
+VALUES (
+        'CS101',
+        'A1',
+        'Fall',
+        2023,
+        'Science Hall',
+        '101',
+        'T1'
+    );
+INSERT INTO section
+VALUES (
+        'MA201',
+        'B1',
+        'Spring',
+        2024,
+        'Science Hall',
+        '102',
+        'T2'
+    );
+INSERT INTO section
+VALUES (
+        'EE210',
+        'C1',
+        'Fall',
+        2023,
+        'EngineeringBldg',
+        '201',
+        'T3'
+    );
+INSERT INTO section
+VALUES (
+        'EN101',
+        'D1',
+        'Spring',
+        2024,
+        'EngineeringBldg',
+        '202',
+        'T4'
+    );
+INSERT INTO section
+VALUES (
+        'BU101',
+        'E1',
+        'Fall',
+        2023,
+        'Arts Center',
+        'A01',
+        'T5'
+    );
+INSERT INTO section
+VALUES (
+        'HI101',
+        'F1',
+        'Spring',
+        2024,
+        'Arts Center',
+        'A02',
+        'T6'
+    );
+INSERT INTO section
+VALUES (
+        'LI101',
+        'G1',
+        'Fall',
+        2023,
+        'Library',
+        'L1',
+        'T7'
+    );
+INSERT INTO section
+VALUES (
+        'CS201',
+        'H1',
+        'Spring',
+        2024,
+        'Library',
+        'L2',
+        'T8'
+    );
+INSERT INTO section
+VALUES (
+        'MA101',
+        'I1',
+        'Fall',
+        2023,
+        'Business Wing',
+        'B101',
+        'T9'
+    );
+INSERT INTO section
+VALUES (
+        'EE110',
+        'J1',
+        'Spring',
+        2024,
+        'Business Wing',
+        'B102',
+        'T10'
+    );
+--For Table 6 teaches
+INSERT INTO teaches
+VALUES ('I001', 'CS101', 'A1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I002', 'MA201', 'B1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I003', 'EE210', 'C1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I004', 'EN101', 'D1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I005', 'BU101', 'E1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I006', 'HI101', 'F1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I007', 'LI101', 'G1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I008', 'CS201', 'H1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I009', 'MA101', 'I1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I010', 'EE110', 'J1', 'Spring', 2024);
+-- For Table 7 student
+INSERT INTO student
+VALUES ('S1001', 'Alice', 'Computer Science', 30);
+INSERT INTO student
+VALUES ('S1002', 'Bob', 'Mathematics', 45);
+INSERT INTO student
+VALUES ('S1003', 'Charlie', 'Physics', 20);
+INSERT INTO student
+VALUES ('S1004', 'David', 'English', 60);
+INSERT INTO student
+VALUES ('S1005', 'Eve', 'Business', 15);
+INSERT INTO student
+VALUES ('S1006', 'Frank', 'History', 35);
+INSERT INTO student
+VALUES ('S1007', 'Grace', 'Psychology', 25);
+INSERT INTO student
+VALUES ('S1008', 'Henry', 'Computer Science', 50);
+INSERT INTO student
+VALUES ('S1009', 'Ivy', 'Mathematics', 40);
+INSERT INTO student
+VALUES ('S1010', 'Jack', 'Physics', 10);
+--For Table 8 takes
+INSERT INTO takes
+VALUES ('S1001', 'CS101', 'A1', 'Fall', 2023, 'A');
+INSERT INTO takes
+VALUES ('S1002', 'MA201', 'B1', 'Spring', 2024, 'B');
+INSERT INTO takes
+VALUES ('S1003', 'EE210', 'C1', 'Fall', 2023, 'C');
+INSERT INTO takes
+VALUES ('S1004', 'EN101', 'D1', 'Spring', 2024, 'C');
+INSERT INTO takes
+VALUES ('S1005', 'BU101', 'E1', 'Fall', 2023, 'B');
+INSERT INTO takes
+VALUES ('S1006', 'HI101', 'F1', 'Spring', 2024, 'C');
+INSERT INTO takes
+VALUES ('S1007', 'LI101', 'G1', 'Fall', 2023, 'A');
+INSERT INTO takes
+VALUES ('S1008', 'CS201', 'H1', 'Spring', 2024, 'B');
+INSERT INTO takes
+VALUES ('S1009', 'MA101', 'I1', 'Fall', 2023, 'A');
+INSERT INTO takes
+VALUES ('S1010', 'EE110', 'J1', 'Spring', 2024, 'C');
+-- for table 9 advisor 
+INSERT INTO advisor
+VALUES ('S1001', 'I001');
+INSERT INTO advisor
+VALUES ('S1002', 'I002');
+INSERT INTO advisor
+VALUES ('S1003', 'I003');
+INSERT INTO advisor
+VALUES ('S1004', 'I004');
+INSERT INTO advisor
+VALUES ('S1005', 'I005');
+INSERT INTO advisor
+VALUES ('S1006', 'I006');
+INSERT INTO advisor
+VALUES ('S1007', 'I007');
+INSERT INTO advisor
+VALUES ('S1008', 'I008');
+INSERT INTO advisor
+VALUES ('S1009', 'I009');
+INSERT INTO advisor
+VALUES ('S1010', 'I010');
+-- For Table 10 time_slot
+INSERT INTO time_slot
+VALUES ('T1', 'M', 9, 0, 9, 50);
+INSERT INTO time_slot
+VALUES ('T2', 'W', 10, 0, 10, 50);
+INSERT INTO time_slot
+VALUES ('T3', 'F', 11, 0, 11, 50);
+INSERT INTO time_slot
+VALUES ('T4', 'M', 13, 0, 13, 50);
+INSERT INTO time_slot
+VALUES ('T5', 'W', 14, 0, 14, 50);
+INSERT INTO time_slot
+VALUES ('T6', 'F', 15, 0, 15, 50);
+INSERT INTO time_slot
+VALUES ('T7', 'M', 16, 0, 16, 50);
+INSERT INTO time_slot
+VALUES ('T8', 'W', 17, 0, 17, 50);
+INSERT INTO time_slot
+VALUES ('T9', 'F', 18, 0, 18, 50);
+INSERT INTO time_slot
+VALUES ('T10', 'M', 19, 0, 19, 50);
+-- For Table 11 prereq
+INSERT INTO prereq
+VALUES ('CS101', 'MA201');
+INSERT INTO prereq
+VALUES ('MA201', 'CS101');
+INSERT INTO prereq
+VALUES ('EE210', 'EN101');
+INSERT INTO prereq
+VALUES ('EN101', 'EE210');
+INSERT INTO prereq
+VALUES ('BU101', 'HI101');
+INSERT INTO prereq
+VALUES ('HI101', 'BU101');
+INSERT INTO prereq
+VALUES ('LI101', 'CS201');
+INSERT INTO prereq
+VALUES ('CS201', 'LI101');
+INSERT INTO prereq
+VALUES ('MA101', 'EE110');
+-- 1. List all classrooms with a capacity greater than 50.
+SELECT *
+FROM classroom
+WHERE capacity > 50;
+-- 2. Find the names of all instructors in the "Computer Science" department.
+SELECT name
+FROM instructor
+WHERE dept_name = 'Computer Science';
+-- 3. Retrieve the titles of all courses offered in the "Spring" semester of 2023.
+SELECT title
+FROM course
+WHERE course_id IN (
+        SELECT course_id
+        FROM section
+        WHERE semester = 'Spring'
+            AND year = 2023
+    );
+-- 4. List all students who have taken more than 100 total credits.
+SELECT name
+FROM student
+WHERE tot_cred > 100;
+-- 5. Find the names of all departments with a budget greater than ₹1,000,000.
+SELECT dept_name
+FROM department
+WHERE budget > 100000;
+-- 6. List all departments and their respective buildings.
+SELECT dept_name,
+    building
+FROM department;
+-- 7. Find the names of all students enrolled in the "Biology" department.
+SELECT name
+FROM student
+WHERE dept_name = 'Biology';
+-- 8. Retrieve the titles of all courses with 3 credits.
+SELECT title
+FROM course
+WHERE credits = 3;
+-- 9. List all instructors who do not belong to any department.
+SELECT name
+FROM instructor
+WHERE dept_name IS NULL;
+-- 10. Find the total number of classrooms in each building.
+SELECT building,
+    COUNT(*) AS total_classrooms
+FROM classroom
+GROUP BY building;
+-- 11. List all courses taught by the instructor with ID "10101".
+--question no 11 ke liye data enter kiya hai
+INSERT INTO instructor
+VALUES ('10101', 'Richard Feynman', 'Physics', 75000.00);
+INSERT INTO teaches
+VALUES ('10101', 'EE210', 'C1', 'Fall', 2023);
+SELECT course_id
+FROM teaches
+WHERE ID = '10101';
+-- 12. Find the total number of students enrolled in each department.
+SELECT dept_name,
+    COUNT(*) AS total_students
+FROM student
+GROUP BY dept_name;
+-- 13. Retrieve the names of students who have taken the course "CS-101" and received an "A" grade.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        WHERE course_id = 'CS101'
+            AND grade = 'A'
+    );
+-- 14. List all instructors who earn a salary greater than ₹50,000.
+SELECT name
+FROM instructor
+WHERE salary > 50000;
+-- 15. Find the average salary of instructors in each department.
+SELECT dept_name,
+    AVG(salary) AS avg_salary
+FROM instructor
+GROUP BY dept_name;
+-- 16. Retrieve the names of students who have not been assigned an advisor.
+SELECT name
+FROM student
+WHERE ID NOT IN (
+        SELECT s_ID
+        FROM advisor
+    );
+-- 17. List all courses that have "CS-101" as a prerequisite.
+SELECT course_id
+FROM prereq
+WHERE prereq_id = 'CS101';
+-- 18. Find the total number of sections taught in each building.
+SELECT building,
+    COUNT(*) AS total_sections
+FROM section
+GROUP BY building;
+-- 19. Retrieve the names of students who have taken at least one course in the "Fall" semester of 2022.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        WHERE semester = 'Fall'
+            AND year = 2022
+    );
+-- 20. List all classrooms that have not been assigned to any section.
+SELECT *
+FROM classroom
+WHERE (building, room_number) NOT IN (
+        SELECT building,
+            room_number
+        FROM section
+    );
+-- 21. List all courses offered by the "Mathematics" department.
+SELECT title
+FROM course
+WHERE dept_name = 'Mathematics';
+-- 22. Find the names of students who have taken courses in both "Fall" and "Spring" semesters.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        WHERE semester = 'Fall'
+    )
+    AND ID IN (
+        SELECT ID
+        FROM takes
+        WHERE semester = 'Spring'
+    );
+-- 23. Retrieve the names of instructors who have taught more than 5 sections.
+SELECT name
+FROM instructor
+WHERE ID IN (
+        SELECT ID
+        FROM teaches
+        GROUP BY ID
+        HAVING COUNT(*) > 5
+    );
+-- 24. List all courses that have no prerequisites.
+SELECT course_id
+FROM course
+WHERE course_id NOT IN (
+        SELECT course_id
+        FROM prereq
+    );
+-- 25. Find the average number of credits taken by students in each department.
+--question no 25 ke liye data enter kiya hai 
+INSERT INTO instructor
+VALUES ('I011', 'Einstein', 'Physics', 90000.00);
+INSERT INTO takes
+VALUES ('S1003', 'EE110', 'J1', 'Spring', 2024, 'A');
+INSERT INTO takes
+VALUES ('S1007', 'EE110', 'J1', 'Spring', 2024, 'B');
+INSERT INTO teaches
+VALUES ('I011', 'EE110', 'J1', 'Spring', 2024);
+SELECT dept_name,
+    AVG(tot_cred) AS avg_credits
+FROM student
+GROUP BY dept_name;
+-- Q26. Retrieve the names of students who have taken courses with the instructor "Einstein".
+-- question no 26 ke liye data enter kiya hai 
+INSERT INTO instructor
+VALUES ('I011', 'Einstein', 'Physics', 90000.00);
+INSERT INTO takes
+VALUES ('S1003', 'EE110', 'J1', 'Spring', 2024, 'A');
+INSERT INTO takes
+VALUES ('S1007', 'EE110', 'J1', 'Spring', 2024, 'B');
+INSERT INTO teaches
+VALUES ('I011', 'EE110', 'J1', 'Spring', 2024);
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        WHERE course_id IN (
+                SELECT course_id
+                FROM teaches
+                WHERE ID = (
+                        SELECT ID
+                        FROM instructor
+                        WHERE name = 'Einstein'
+                    )
+            )
+    );
+-- Q27. List all sections that are held in the "Watson" building.
+-- question no 27 ke liye data enter kiya
+INSERT INTO classroom
+VALUES ('Watson', 'W101', 40);
+INSERT INTO section
+VALUES (
+        'CS101',
+        'W1',
+        'Fall',
+        2023,
+        'Watson',
+        'W101',
+        'T1'
+    );
+SELECT *
+FROM section
+WHERE building = 'Watson';
+-- 28. Find the total budget allocated to all departments.
+SELECT SUM(budget) AS total_budget
+FROM department;
+-- 29. Retrieve the names of students who have taken at least one course with a grade of "B".
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        WHERE grade = 'B'
+    );
+-- 30. List all instructors who have not taught any courses.
+SELECT name
+FROM instructor
+WHERE ID NOT IN (
+        SELECT ID
+        FROM teaches
+    );
+-- 31. Find the names of students who have taken all courses offered by the "Computer Science" department.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        WHERE course_id IN (
+                SELECT course_id
+                FROM course
+                WHERE dept_name = 'Computer Science'
+            )
+        GROUP BY ID
+        HAVING COUNT(DISTINCT course_id) = (
+                SELECT COUNT(*)
+                FROM course
+                WHERE dept_name = 'Computer Science'
+            )
+    );
+-- 32. Retrieve the names of instructors who have taught every course in their department.
+SELECT name
+FROM instructor
+WHERE ID IN (
+        SELECT ID
+        FROM teaches
+        GROUP BY ID
+        HAVING COUNT(DISTINCT course_id) = (
+                SELECT COUNT(*)
+                FROM course
+                WHERE dept_name = (
+                        SELECT dept_name
+                        FROM instructor
+                        WHERE instructor.ID = teaches.ID
+                    )
+            )
+    );
+-- 33. List all students who have taken at least one course with every instructor in their department.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        GROUP BY ID
+        HAVING COUNT(DISTINCT course_id) >= (
+                SELECT COUNT(*)
+                FROM instructor
+                WHERE dept_name = (
+                        SELECT dept_name
+                        FROM student
+                        WHERE student.ID = takes.ID
+                    )
+            )
+    );
+-- 34. Find the courses that have the highest number of prerequisites.
+SELECT course_id
+FROM prereq
+GROUP BY course_id
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+-- 35. Retrieve the names of students who have taken the same course more than once.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        GROUP BY ID,
+            course_id
+        HAVING COUNT(*) > 1
+    );
+-- 36. List all instructors who have taught in every semester (Fall, Winter, Spring, Summer) in the year 2023.
+SELECT name
+FROM instructor
+WHERE ID IN (
+        SELECT ID
+        FROM teaches
+        WHERE year = 2023
+        GROUP BY ID
+        HAVING COUNT(DISTINCT semester) = 4
+    );
+-- 37. Find the departments where the average instructor salary is greater than the overall average salary.
+SELECT dept_name
+FROM instructor
+GROUP BY dept_name
+HAVING AVG(salary) > (
+        SELECT AVG(salary)
+        FROM instructor
+    );
+-- 38. Retrieve the names of students who have taken courses in all available time slots.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        GROUP BY ID
+        HAVING COUNT(DISTINCT time_slot_id) = (
+                SELECT COUNT(*)
+                FROM time_slot
+            )
+    );
+-- 39. List all courses that have no prerequisites but are prerequisites for other courses.
+SELECT course_id
+FROM prereq
+WHERE course_id NOT IN (
+        SELECT prereq_id
+        FROM prereq
+    );
+-- 40. Find the students who have taken the most number of courses in a single semester.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        GROUP BY ID,
+            semester,
+            year
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+    );
+-- 41. Find the students who have taken courses from all departments.
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        GROUP BY ID
+        HAVING COUNT(DISTINCT dept_name) = (
+                SELECT COUNT(*)
+                FROM department
+            )
+    );
+-- 42. Retrieve the names of instructors who have taught the same course in multiple semesters.
+--  question no 42 ke liye data enter kiya hai
+INSERT INTO teaches
+VALUES ('I001', 'CS101', 'A1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I001', 'CS101', 'A1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I002', 'MA201', 'B1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I002', 'MA201', 'B1', 'Spring', 2024);
+SELECT name
+FROM instructor
+WHERE ID IN (
+        SELECT ID
+        FROM teaches
+        GROUP BY ID,
+            course_id
+        HAVING COUNT(DISTINCT semester) > 1
+    );
+-- 43. List all courses that are prerequisites for more than 3 other courses.
+-- question no 43 ke liye data enter kiya hai 
+INSERT INTO department
+VALUES ('Philosophy', 'Humanities Wing', 10000.00);
+INSERT INTO prereq
+VALUES ('CS101', 'CS201');
+INSERT INTO prereq
+VALUES ('CS101', 'MA101');
+INSERT INTO prereq
+VALUES ('CS101', 'EE210');
+INSERT INTO prereq
+VALUES ('CS101', 'BU101');
+INSERT INTO student
+VALUES ('S1011', 'Zara', 'Philosophy', 15000);
+SELECT prereq_id
+FROM prereq
+GROUP BY prereq_id
+HAVING COUNT(*) > 3;
+-- 44. Find the departments where the total student credits exceed the department budget.
+-- 44 ke liye data entry
+INSERT INTO department
+VALUES ('Philosophy', 'Humanities Wing', 10000.00);
+INSERT INTO student
+VALUES ('S1011', 'Zara', 'Philosophy', 15000);
+SELECT d.dept_name
+FROM department d
+    JOIN student s ON d.dept_name = s.dept_name
+GROUP BY d.dept_name
+HAVING SUM(s.tot_cred) > SUM(d.budget);
+-- Q45. Retrieve the names of students who have taken courses with every instructor in their department.
+-- 45 question ke liye data entry 
+INSERT INTO student
+VALUES ('S1012', 'Leo', 'Computer Science', 60);
+INSERT INTO takes
+VALUES ('S1012', 'CS101', 'A1', 'Fall', 2023, 'A');
+INSERT INTO takes
+VALUES ('S1012', 'CS201', 'H1', 'Spring', 2024, 'B');
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes t
+            JOIN instructor i ON t.course_id IN (
+                SELECT course_id
+                FROM teaches
+                WHERE ID = i.ID
+            )
+        GROUP BY ID
+        HAVING COUNT(DISTINCT i.ID) = (
+                SELECT COUNT(*)
+                FROM instructor
+                WHERE dept_name = (
+                        SELECT dept_name
+                        FROM student
+                        WHERE student.ID = t.ID
+                    )
+            )
+    );
+-- Q46. List all courses that have been taught in every semester.
+-- 46 ke liye data entry 
+INSERT INTO teaches
+VALUES ('I003', 'EE210', 'C1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I003', 'EE210', 'C1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I003', 'EE210', 'C1', 'Winter', 2023);
+INSERT INTO teaches
+VALUES ('I003', 'EE210', 'C1', 'Summer', 2023);
+SELECT course_id
+FROM teaches
+GROUP BY course_id
+HAVING COUNT(DISTINCT semester) = 4;
+-- Q47. Find the students who have taken the most number of courses overall.
+-- 47 question ke liye data entry 
+INSERT INTO takes
+VALUES ('S1001', 'MA101', 'I1', 'Fall', 2023, 'A');
+INSERT INTO takes
+VALUES ('S1001', 'CS201', 'H1', 'Spring', 2024, 'B');
+INSERT INTO takes
+VALUES ('S1001', 'EE210', 'C1', 'Fall', 2023, 'C');
+INSERT INTO takes
+VALUES ('S1001', 'BU101', 'E1', 'Spring', 2024, 'A');
+SELECT name
+FROM student
+WHERE ID IN (
+        SELECT ID
+        FROM takes
+        GROUP BY ID
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+    );
+-- Q48. Retrieve the names of instructors who have taught courses in all buildings.
+-- 48 data entry ke liye
+INSERT INTO teaches
+VALUES ('I005', 'BU101', 'E1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I005', 'CS101', 'A1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I005', 'MA101', 'I1', 'Fall', 2023);
+INSERT INTO teaches
+VALUES ('I005', 'EN101', 'D1', 'Spring', 2024);
+INSERT INTO teaches
+VALUES ('I005', 'LI101', 'G1', 'Fall', 2023);
+SELECT name
+FROM instructor
+WHERE ID IN (
+        SELECT ID
+        FROM teaches t
+            JOIN section s ON t.course_id = s.course_id
+        GROUP BY ID
+        HAVING COUNT(DISTINCT building) = (
+                SELECT COUNT(DISTINCT building)
+                FROM classroom
+            )
+    );
+-- Q49. List all students who have taken courses with overlapping time slots.
+-- 49 ke liye data entry 
+INSERT INTO takes
+VALUES ('S1013', 'CS101', 'A1', 'Fall', 2023, 'B');
+INSERT INTO takes
+VALUES ('S1013', 'MA101', 'I1', 'Fall', 2023, 'A');
+SELECT DISTINCT s1.name
+FROM student s1
+    JOIN takes t1 ON s1.ID = t1.ID
+    JOIN takes t2 ON s1.ID = t2.ID
+    AND t1.time_slot_id = t2.time_slot_id
+    AND (t1.course_id <> t2.course_id);
+SELECT DISTINCT s1.name
+FROM student s1
+    JOIN takes t1 ON s1.ID = t1.ID
+    JOIN takes t2 ON s1.ID = t2.ID
+    AND t1.time_slot_id = t2.time_slot_id
+    AND (t1.course_id <> t2.course_id);
+-- Q50. Find the courses that have the highest enrollment across all semesters.
+-- 50 ke liye data entry 
+INSERT INTO takes
+VALUES ('S1014', 'CS101', 'A1', 'Fall', 2023, 'A');
+INSERT INTO takes
+VALUES ('S1015', 'CS101', 'A1', 'Fall', 2023, 'B');
+INSERT INTO takes
+VALUES ('S1016', 'CS101', 'A1', 'Fall', 2023, 'C');
+INSERT INTO takes
+VALUES ('S1017', 'CS101', 'A1', 'Fall', 2023, 'B');
+SELECT course_id
+FROM takes
+GROUP BY course_id
+ORDER BY COUNT(*) DESC
+LIMIT 1;
